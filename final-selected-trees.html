@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Final Selected Trees &mdash; Zelienople Community Park</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""/>
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color: #222; }
+  #header { background: #2d5016; color: #fff; padding: 14px 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.15); }
+  #header h1 { margin: 0; font-size: 22px; font-weight: 600; }
+  #header .subtitle { margin-top: 4px; font-size: 13px; opacity: 0.9; }
+  #app { display: flex; height: calc(100% - 64px); }
+  #map { flex: 1; }
+  #sidebar { width: 270px; background: #f7f7f5; border-left: 1px solid #d4d4d0;
+             overflow-y: auto; padding: 14px 16px; box-sizing: border-box; }
+  #sidebar h2 { margin: 0 0 6px 0; font-size: 15px; color: #2d5016; }
+  #sidebar .stats { font-size: 13px; color: #555; margin-bottom: 12px; }
+  #legend-list { list-style: none; padding: 0; margin: 0; font-size: 13px; }
+  #legend-list li { display: flex; align-items: center; padding: 4px 4px;
+                     cursor: pointer; border-radius: 3px; }
+  #legend-list li:hover { background: #e8e8e2; }
+  #legend-list li.dim { opacity: 0.35; }
+  .legend-dot { width: 14px; height: 14px; border-radius: 50%; margin-right: 8px;
+                 border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,0.4); flex-shrink: 0; }
+  .legend-name { flex: 1; }
+  .legend-count { color: #888; font-size: 11px; margin-left: 6px; }
+  .tree-marker { border-radius: 50%; border: 2px solid #fff;
+                  box-shadow: 0 0 0 1px rgba(0,0,0,0.5); }
+  .leaflet-tooltip.tree-tooltip { font-size: 13px; font-weight: 600; padding: 4px 8px;
+                                   background: #fff; color: #222; border: 1px solid #2d5016;
+                                   border-radius: 4px; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
+  .leaflet-tooltip.tree-tooltip .tag-num { display: block; color: #555; font-weight: 400;
+                                            font-size: 11px; margin-top: 2px; }
+  #footer { font-size: 11px; color: #777; padding-top: 12px; margin-top: 12px;
+             border-top: 1px solid #d4d4d0; }
+  @media (max-width: 700px) {
+    #app { flex-direction: column; }
+    #sidebar { width: 100%; height: 220px; border-left: none; border-top: 1px solid #d4d4d0; }
+  }
+</style>
+</head>
+<body>
+<div id="header">
+  <h1>Zelienople Community Park &mdash; Final Selected Trees</h1>
+  <div class="subtitle">Eagle Scout Project &middot; 36 selected trees &middot; Hover over a pin to see species and tag number</div>
+</div>
+<div id="app">
+  <div id="map"></div>
+  <div id="sidebar">
+    <h2>Tree Species</h2>
+    <div class="stats" id="stats"></div>
+    <ul id="legend-list"></ul>
+    <div id="footer">
+      Click a species in the legend to toggle its pins.<br>
+      Map: &copy; OpenStreetMap contributors.
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+<script>
+  const TREES = [{"tag": 4003, "tag_display": "Tag #4003", "lat": 40.79231111111111, "lon": -80.1314, "species": "Pin Oak"}, {"tag": 4004, "tag_display": "Tag #4004", "lat": 40.79208333333333, "lon": -80.13170277777778, "species": "Colorado Blue Spruce"}, {"tag": 4008, "tag_display": "Tag #4008", "lat": 40.79250833333333, "lon": -80.13092499999999, "species": "Red Maple"}, {"tag": 4014, "tag_display": "Tag #4014", "lat": 40.79311111111111, "lon": -80.13109444444444, "species": "Ginkgo"}, {"tag": 4015, "tag_display": "Tag #4015", "lat": 40.79310833333333, "lon": -80.13101388888889, "species": "Eastern Redbud"}, {"tag": 4016, "tag_display": "Tag #4016", "lat": 40.79308333333333, "lon": -80.13101666666665, "species": "Silver Maple"}, {"tag": 4017, "tag_display": "Tag #4017", "lat": 40.79280555555555, "lon": -80.13102777777777, "species": "Gray Birch"}, {"tag": 4018, "tag_display": "Tag #4018", "lat": 40.79286111111111, "lon": -80.13104166666666, "species": "Sugar Maple"}, {"tag": 4019, "tag_display": "Tag #4019", "lat": 40.79272222222222, "lon": -80.131125, "species": "Norway Maple"}, {"tag": 4020, "tag_display": "Tag #4020", "lat": 40.79305833333333, "lon": -80.13074722222221, "species": "White Spruce"}, {"tag": 4021, "tag_display": "Tag #4021", "lat": 40.79313333333333, "lon": -80.13064722222222, "species": "Honey Locust"}, {"tag": 4027, "tag_display": "Tag #4027", "lat": 40.793078888888886, "lon": -80.12947722222222, "species": "Eastern Hemlock"}, {"tag": 4029, "tag_display": "Tag #4029", "lat": 40.79274444444444, "lon": -80.12920833333332, "species": "Crabapple"}, {"tag": 4035, "tag_display": "Tag #4035", "lat": 40.79235277777778, "lon": -80.128175, "species": "River Birch"}, {"tag": 4039, "tag_display": "Tag #4039", "lat": 40.792, "lon": -80.12796, "species": "Box Elder"}, {"tag": 4040, "tag_display": "Tag #4040", "lat": 40.79187222222222, "lon": -80.12792777777777, "species": "Sweet Cherry"}, {"tag": 4042, "tag_display": "Tag #4042", "lat": 40.79163333333333, "lon": -80.12823055555555, "species": "Black Walnut"}, {"tag": 5002, "tag_display": "Tag #5002", "lat": 40.79313, "lon": -80.13018, "species": "Red Maple"}, {"tag": 5010, "tag_display": "Tag #5010", "lat": 40.79239, "lon": -80.12777, "species": "Chinese Elm"}, {"tag": 5011, "tag_display": "Tag #5011", "lat": 40.79247888888889, "lon": -80.12784527777777, "species": "Norway Maple"}, {"tag": 5012, "tag_display": "Tag #5012", "lat": 40.79235, "lon": -80.12809, "species": "Bradford Pear"}, {"tag": 5013, "tag_display": "Tag #5013", "lat": 40.79240138888888, "lon": -80.12898694444443, "species": "Black Locust"}, {"tag": 5014, "tag_display": "Tag #5014", "lat": 40.79206444444444, "lon": -80.12959194444444, "species": "Tulip Poplar"}, {"tag": 5015, "tag_display": "Tag #5015", "lat": 40.79127277777778, "lon": -80.13190416666666, "species": "Norway Spruce"}, {"tag": 5016, "tag_display": "Tag #5016", "lat": 40.7914325, "lon": -80.13197849999999, "species": "Black Cherry"}, {"tag": 5017, "tag_display": "Tag #5017", "lat": 40.79149277777778, "lon": -80.13211805555555, "species": "White Pine"}, {"tag": 5018, "tag_display": "Tag #5018", "lat": 40.79145138888889, "lon": -80.13216944444444, "species": "Red Maple"}, {"tag": 5019, "tag_display": "Tag #5019", "lat": 40.79184972222222, "lon": -80.13064805555555, "species": "Eastern Redcedar"}, {"tag": 7002, "tag_display": "Tag #7002", "lat": 40.79207527777778, "lon": -80.13027416666667, "species": "Sugar Maple"}, {"tag": 7005, "tag_display": "Tag #7005", "lat": 40.79195472222222, "lon": -80.13033333333333, "species": "American Elm"}, {"tag": null, "tag_display": "Untagged", "lat": 40.79254638888889, "lon": -80.1313511111111, "species": "American Sycamore"}, {"tag": null, "tag_display": "Untagged", "lat": 40.796480833333334, "lon": -80.13137333333333, "species": "American Sycamore"}, {"tag": null, "tag_display": "Untagged", "lat": 40.792325, "lon": -80.12986, "species": "Black Cherry"}, {"tag": null, "tag_display": "Untagged", "lat": 40.79222, "lon": -80.13058, "species": "Ginkgo"}, {"tag": null, "tag_display": "Untagged", "lat": 40.7924, "lon": -80.12876, "species": "Honey Locust"}, {"tag": null, "tag_display": "Untagged", "lat": 40.79228, "lon": -80.129925, "species": "Northern Red Oak"}];
+  const SPECIES_COLORS = {"Red Maple": "#e6194B", "Ginkgo": "#3cb44b", "Sugar Maple": "#4363d8", "Norway Maple": "#f58231", "Honey Locust": "#911eb4", "Black Cherry": "#42d4f4", "American Sycamore": "#f032e6", "Pin Oak": "#9A6324", "Colorado Blue Spruce": "#800000", "Eastern Redbud": "#808000", "Silver Maple": "#000075", "Gray Birch": "#469990", "White Spruce": "#bfef45", "Eastern Hemlock": "#fabed4", "Crabapple": "#ffd8b1", "River Birch": "#aaffc3", "Box Elder": "#dcbeff", "Sweet Cherry": "#fffac8", "Black Walnut": "#a9a9a9", "Chinese Elm": "#000000", "Bradford Pear": "#0077b6", "Black Locust": "#ff006e", "Tulip Poplar": "#7209b7", "Norway Spruce": "#06d6a0", "White Pine": "#ef476f", "Eastern Redcedar": "#ffd166", "American Elm": "#118ab2", "Northern Red Oak": "#073b4c"};
+  const SPECIES_COUNTS = {"Pin Oak": 1, "Colorado Blue Spruce": 1, "Red Maple": 3, "Ginkgo": 2, "Eastern Redbud": 1, "Silver Maple": 1, "Gray Birch": 1, "Sugar Maple": 2, "Norway Maple": 2, "White Spruce": 1, "Honey Locust": 2, "Eastern Hemlock": 1, "Crabapple": 1, "River Birch": 1, "Box Elder": 1, "Sweet Cherry": 1, "Black Walnut": 1, "Chinese Elm": 1, "Bradford Pear": 1, "Black Locust": 1, "Tulip Poplar": 1, "Norway Spruce": 1, "Black Cherry": 2, "White Pine": 1, "Eastern Redcedar": 1, "American Elm": 1, "American Sycamore": 2, "Northern Red Oak": 1};
+  const SPECIES_ORDER = ["Red Maple", "Ginkgo", "Sugar Maple", "Norway Maple", "Honey Locust", "Black Cherry", "American Sycamore", "Pin Oak", "Colorado Blue Spruce", "Eastern Redbud", "Silver Maple", "Gray Birch", "White Spruce", "Eastern Hemlock", "Crabapple", "River Birch", "Box Elder", "Sweet Cherry", "Black Walnut", "Chinese Elm", "Bradford Pear", "Black Locust", "Tulip Poplar", "Norway Spruce", "White Pine", "Eastern Redcedar", "American Elm", "Northern Red Oak"];
+  const BOUNDS = {
+    south: 40.79127277777778, north: 40.796480833333334,
+    west: -80.13216944444444, east: -80.12777
+  };
+
+  const map = L.map('map', { zoomControl: true, scrollWheelZoom: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 20,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+  map.fitBounds([[BOUNDS.south, BOUNDS.west], [BOUNDS.north, BOUNDS.east]], { padding: [40, 40] });
+
+  const visibleSpecies = new Set(SPECIES_ORDER);
+  const markersBySpecies = {};
+  SPECIES_ORDER.forEach(sp => markersBySpecies[sp] = []);
+
+  function makeIcon(color) {
+    return L.divIcon({
+      className: 'tree-marker-wrap',
+      html: `<div class="tree-marker" style="width:16px;height:16px;background:${color};"></div>`,
+      iconSize: [16, 16], iconAnchor: [8, 8],
+    });
+  }
+  const iconCache = {};
+  function iconFor(species) {
+    if (!iconCache[species]) iconCache[species] = makeIcon(SPECIES_COLORS[species] || '#888');
+    return iconCache[species];
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+  }
+
+  TREES.forEach(tree => {
+    const marker = L.marker([tree.lat, tree.lon], { icon: iconFor(tree.species) });
+    marker.bindTooltip(
+      `<div>${escapeHtml(tree.species)}<span class="tag-num">${escapeHtml(tree.tag_display)}</span></div>`,
+      { className: 'tree-tooltip', direction: 'top', offset: [0, -8], opacity: 1 });
+    marker.bindPopup(`<strong>${escapeHtml(tree.species)}</strong><br>${escapeHtml(tree.tag_display)}`);
+    marker.addTo(map);
+    markersBySpecies[tree.species].push(marker);
+  });
+
+  const legendList = document.getElementById('legend-list');
+  document.getElementById('stats').textContent = `${TREES.length} trees · ${SPECIES_ORDER.length} species`;
+  SPECIES_ORDER.forEach(species => {
+    const li = document.createElement('li');
+    li.dataset.species = species;
+    const dot = document.createElement('span'); dot.className = 'legend-dot'; dot.style.background = SPECIES_COLORS[species];
+    const name = document.createElement('span'); name.className = 'legend-name'; name.textContent = species;
+    const count = document.createElement('span'); count.className = 'legend-count'; count.textContent = SPECIES_COUNTS[species];
+    li.appendChild(dot); li.appendChild(name); li.appendChild(count);
+    li.addEventListener('click', () => {
+      if (visibleSpecies.has(species)) {
+        visibleSpecies.delete(species);
+        markersBySpecies[species].forEach(m => map.removeLayer(m));
+        li.classList.add('dim');
+      } else {
+        visibleSpecies.add(species);
+        markersBySpecies[species].forEach(m => m.addTo(map));
+        li.classList.remove('dim');
+      }
+    });
+    legendList.appendChild(li);
+  });
+</script>
+</body>
+</html>
